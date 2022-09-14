@@ -4,6 +4,7 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 from tkinter.filedialog import askopenfile
 from tkinter import filedialog, messagebox
 from tkinter.filedialog import asksaveasfile
+from customtkinter import *
 
 
 def is_admin():
@@ -53,40 +54,35 @@ class Main():
     def __init__(self):
         self.pdfs = []
         self.pdf_holder = []
-        self.root = Tk()
+        self.root = CTk()
         self.configure_root()
         self.total_pdf = StringVar()
         self.total_pdf.set("Total Pages: 0")
         self.total_pdff = 0
         # self.pdf_frame = Frame(self.root, background="red", height=500)
         # self.acc_frame = Frame(self.root, background="blue", height=500, width=350)
-        self.pdf_frame = Frame(self.root, background=self.dracula_back, height=500)
-        self.acc_frame = Frame(self.root, background=self.dracula_back, height=500, width=350)
 
-        self.acc_frame.grid_configure(row=3, column=1)
-        self.acc_frame.grid_rowconfigure(0, weight=1)
-        self.acc_frame.grid_rowconfigure(1, weight=1)
-        self.acc_frame.grid_rowconfigure(2, weight=1)
+        set_appearance_mode("dark")  # Modes: system (default), light, dark
+        set_default_color_theme("blue")
 
-        self.pdf_frame.grid(row=0, column=0)
-        self.acc_frame.grid(row=0, column=1)
+        self.acc_frame = Frame(self.root, background=self.dracula_back)
+        self.acc_frame.grid(row=0, column=0, sticky='we')
+        self.pdf_frame = Frame(self.root, background=self.dracula_back)
+        self.pdf_frame.grid(row=1, column=0, sticky='we')
 
-        self.btn_frame = Frame(self.acc_frame, background=self.dracula_back)
-        self.btn_frame.grid(row=1, column=0, sticky=E + W)
+        self.add_pdf_frame = CTkButton(self.acc_frame, text="Add PDF", command=self.add_pdf)
+        self.add_pdf_frame.grid(row=0, column=0, padx=3, pady=10)
+        self.clear_btn = CTkButton(self.acc_frame, text="Clear", command=self.clear_pdfs)
+        self.clear_btn.grid(row=0, column=1, padx=3, pady=10)
+        self.merge_and_save_btn = CTkButton(self.acc_frame, text="Merge & Save", command=self.merge_pdfs)
+        self.merge_and_save_btn.grid(row=0, column=2, padx=3, pady=10)
 
-        # self.add_btn = Button(self.btn_frame, text="Add PDF", command=lambda: self.add_pdf(f"hello {self.temp}"))
-        self.add_btn = Button(self.btn_frame, text="Add PDF", command=self.add_pdf)
-        self.clear_btn = Button(self.btn_frame, text="Clear", command=self.clear_pdfs)
-        self.merge_and_save_btn = Button(self.acc_frame, text="Merge And Save", command=self.merge_pdfs)
-        self.total_pdf_button = Button(self.acc_frame, textvariable=self.total_pdf, state="disabled")
-        self.total_pdf_button.grid(row=0, column=0)
-        print(self.total_pdf.get())
-        self.clear_btn.grid(row=0, column=0)
-        self.add_btn.grid(row=0, column=1)
-        self.merge_and_save_btn.grid(row=2, column=0, sticky=E + W)
 
     def merge_pdfs(self):
-        output = asksaveasfile(initialfile='Merged', defaultextension=".txt",
+        if len(self.pdfs) == 0:
+            self.notyfi(title="Cannot find any PDF", msg="No PDFs Added")
+            return
+        output = asksaveasfile(initialfile='Merged', defaultextension=".pdf",
                                filetypes=[("PDF Files", "*.pdf*")]).name + ".pdf"
         pdf_writer = PdfFileWriter()
         for pdf in self.pdfs:
@@ -107,7 +103,7 @@ class Main():
             temp = self.total_pdff
             self.total_pdff = self.total_pdff + PdfFileReader(path).getNumPages()
             self.pdfs.append(PDF(path))
-            self.pdfs[len(self.pdfs - 1)].add_more_page(self.total_pdff - temp)
+            self.pdfs[len(self.pdfs) - 1].add_more_page(self.total_pdff - temp)
             self.total_pdf.set("total pages: " + str(self.total_pdff))
 
         except Exception as e:
@@ -119,22 +115,18 @@ class Main():
 
         self.pdf_holder.append(Frame(self.pdf_frame, background=self.dracula_back, width=350))
         lenf = len(self.pdf_holder) - 1
-        Label(self.pdf_holder[lenf],
-              text=path.split('\\')[len(path.split('\\')) - 1],
-              background=self.dracula_back).grid(row=0, column=0, padx=2, pady=2)
-        Button(self.pdf_holder[lenf],
+        CTkLabel(self.pdf_holder[lenf],
+              text=path.split('\\')[len(path.split('\\')) - 1]).grid(row=0, column=0, padx=2, pady=2)
+        CTkButton(self.pdf_holder[lenf],
                text="❌",
-               background=self.dracula_back,
-               foreground="red",
-               command=lambda: self.remove_pdf(lenf)
-               ).grid(row=0, column=1, padx=2, pady=2)
+               command=lambda: self.remove_pdf(lenf)).grid(row=0, column=1, padx=10, pady=3)
         self.pdf_holder[lenf].grid()
 
     def start(self):
         self.root.mainloop()
 
     def configure_root(self):
-        self.root.title("PDF merger By Subhranil Maity v2.0")
+        self.root.title("PDF merger By Subhranil Maity v3.0")
         self.root.geometry("700x500+100+100")
         self.root.configure(background=self.dracula_back)
         self.root.resizable(False, False)
@@ -149,11 +141,24 @@ class Main():
         self.pdfs[lenf].kill()
 
     def clear_pdfs(self):
-        print("To be done")
+        self.pdfs = []
+        for holder in self.pdf_holder:
+            holder.destroy()
+        self.pdf_holder = []
+
+    def notyfi(self, title, msg):
+        noti = CTk()
+        noti.configure(background=self.dracula_back)
+        noti.geometry("200x100+200+200")
+        noti.title(title)
+        noti.resizable(False, False)
+        CTkLabel(noti, text=msg).place(anchor='n', relx=0.5)
+        CTkButton(noti, text="OK", command=lambda: noti.destroy()).place(relx=0.5, rely=0.5, anchor=CENTER)
+        noti.mainloop()
+
 
 
 if is_admin():
-    pass
     # Code of your program here
     Window = Main()
     Window.start()
